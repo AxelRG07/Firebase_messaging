@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-
+                    FCMTokenScreen()
                 }
             }
         }
@@ -62,6 +62,69 @@ class MainActivity : ComponentActivity() {
                 FCMMessageManager.messageTitle.value = title ?: ""
                 FCMMessageManager.messageBody.value = body ?: ""
             }
+        }
+    }
+}
+
+@Composable
+fun FCMTokenScreen() {
+    var token by remember { mutableStateOf("Obteniendo token...") }
+
+    val title by MainActivity.FCMMessageManager.messageTitle
+    val body by MainActivity.FCMMessageManager.messageBody
+
+    LaunchedEffect(Unit) {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                token = "Error al obtener token"
+                return@addOnCompleteListener
+            }
+            token = task.result
+            Log.d("FCM_TOKEN", token)
+        }
+    }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = "FCM Device Token:", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = token,
+            onValueChange = {},
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(text = "Último Mensaje Recibido:", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (title.isNotEmpty() || body.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = body,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = "Esperando mensajes desde el servidor...",
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
